@@ -1,0 +1,6 @@
+Flask>=1.1.1
+WTForms>=2.2.1
+redis>=3.3.11
+
+# testing
+pytest>=5.2.1

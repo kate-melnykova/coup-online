@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Coup online</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://underscorejs.org/underscore-min.js"></script>
+    <script src="{{url_for('static', filename='main.js')}}"></script>
+</head>
+<body>
+<div class="topnav">
+    <table style="border: 0; width: 100%">
+        <tr>
+            <td colspan="2"><h1 style="text-align:center;"> Coup online </h1></td>
+        </tr>
+        <td>
+            <td style="width: 15%"><a href="/main"> Main </a></td>
+            <td style="width: 15%"><a href="/create_profile"> Create profile </a></td>
+        </tr>
+    </table>
+</div>
+{% block content %}
+{% endblock %}
+</body>
+</html>

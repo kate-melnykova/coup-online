@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+Welcome to the coup online! No login or registration required.
+<fieldset>
+    <form action="./game" method="POST">
+        <p>Create new game (you will be a chair) <input type="submit" name="Create" value="create" /></p>
+        <p>Join the game <input type="number" name="game_id">game_id
+            <input type="submit" name="Join" value="join"</p>
+    </form>
+</fieldset>
+{% endblock %}
