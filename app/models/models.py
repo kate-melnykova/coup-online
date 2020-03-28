@@ -6,6 +6,8 @@ from time import sleep
 from typing import List
 import random
 
+from models.db import db
+
 
 class Deck:
     mapping = {
@@ -123,16 +125,28 @@ class Game:
     self.challenged = 0  is no
     self.challenged = 1 is pending
     """
-    def __init__(self, n_players, dealer,
-                 card_types=['Duke', 'Ambassador', 'Assassin', 'Contessa', 'Captain']):
-        # TODO
+
+    def __init__(self, n_players, card_types, deck, all_users,
+                 turn_id, move, cur_player, winner):
+        self.n_players = n_players
+        self.card_types = card_types
+        self.deck = deck
+        self.all_users = all_users
+        self.turn_id = turn_id
+        self.move = move
+        self.cur_player = cur_player
+        self.winner = winner
 
     @classmethod
-    def load(cls, data):
-        return cls(**data)
+    def load(cls, game_id: str) -> 'Game':
+        data = db.load(game_id)
+        if data is None:
+            return None
 
-    def save(self):
-        # TODO
+        data = json.loads(data)
+        return cls(data)
+
+    def save(self) -> None:
         d = {
             'n_players': self.n_players,
             'card_types': self.card_types,
@@ -140,10 +154,11 @@ class Game:
             'all_users': [user.to_db() for user in self.all_users],
             'turn_id': self.turn_id,
             'move': self.move,
-            'move_accepted': self.move_accepted,
             'cur_player': self.cur_player.to_db(),
             'winner': self.winner
         }
+        d = json.dumps(d)
+        db.save(self.game_id, d)
 
     def create(self, n_players,
                card_types=['Duke', 'Ambassador', 'Assassin', 'Contessa', 'Captain']):
@@ -159,7 +174,6 @@ class Game:
         self.all_users = list()
         self.turn_id = -1
         self.move = None
-        self.move_accepted = list()
         self.cur_player = None
         self.winner = None
         self.save()
@@ -168,9 +182,7 @@ class Game:
         user = User(name, self.deck)
         self.all_users.append(user)
         if len(self.all_users) == self.n_players:
-            self.plays = itertools.cycle(self.all_users)
-            self.status = 1
-            self.winner = None
+            self.turn_id = 0
         self.save()
 
     def challenge_to_have(self, user_accused, user_accuses, type_) -> bool:
