@@ -1,10 +1,71 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'base.html' %}
 
-</body>
-</html>
+{% block content %}
+<div>
+    <p> {user.name}, you have
+        {% for card in user.playing cards %}
+            { card.type_ },
+        {% endfor %}
+    </p>
+    <p>
+        Lost lives:
+        {% for card in user.killed %}
+           { card.type_}
+        {% endfor %}
+    </p>
+</div>
+
+<div>
+    <ul>
+        {% for player in game.all_users %}
+        <li>{% if player.name == user.name %}
+            <span class="borderstyle">{ user.name }</span>
+            {% else %}
+            <span> { player.name }</span>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% if player.name == user.name %}
+<div>
+    Select one of the following options:
+    <fieldset>
+        <form method="POST">
+            <p> I take income <input type="submit" name="submit" value="income"></p>
+            <p> I take a foreign aid <input type="submit" name="submit" value="foreign_aid"></p>
+            <p> I am a Duke and I take taxes <input type="submit" name="submit" value="taxes"></p>
+            <p> I am a Captain and I steal from <br>
+                <table>
+                    <tr>
+                        {% for player in game.all_users %}
+                            {% if player.name != user.name %}
+                                {% set submit_name = 'captain_' + player.name %}
+                                <td class="borderstyle">
+                                    <input type="submit" name="submit" value=submit_name>
+                                </td>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                </table>
+            </p>
+            <p>I am an Assassin and I kill <br>
+                <table>
+                    <tr>
+                        {% for player in game.all_users %}
+                            {% if player.name != user.name %}
+                                {% set submit_name = 'assassin_' + player.name %}
+                                <td class="borderstyle">
+                                    <input type="submit" name="submit" value=submit_name>
+                                </td>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                </table>
+            </p>
+            <p> I am Ambassador <input type="submit" name="submit" value="ambassador"></p>
+        </form>
+    </fieldset>
+</div>
+{% endif %}
+{% endblock %}

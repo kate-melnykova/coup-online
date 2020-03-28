@@ -5,10 +5,31 @@ Welcome to the coup online! No login or registration required.
 <fieldset>
     <form action="./game" method="POST">
         {{ form.csrf }}
-        <p> Enter your name (mandatory) {{ form.name(class="css_class") }}</p>
-        <p>Create new game (you will be a chair) <input type="submit" name="Create" value="create" /></p>
-        <p>Join the game {{ form.game_id(class="css_class") }}
-            <input type="submit" name="Join" value="join"></p>
+        <table>
+            <tr>
+                <td>{{form.name.label}}</td>
+                <td>{{ form.name(class="css_class") }}</td>
+            </tr>
+            <hr>
+            <tr>
+                <td>{{form.n_players.label}}</td>
+                <td>
+                    {{ form.n_players(class="css_class") }}
+                    <input type="submit" name="start" value="create" /></p>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2"> or </td>
+            </tr>
+            <tr>
+                <td>{{form.game_id.label}}</td>
+                <td>
+                    {{ form.game_id(class="css_class") }}
+                    <input type="submit" name="start" value="join" /></p>
+                </td>
+            </tr>
+        </table>
+         <input type="submit" name="start" value="start" /></p>
     </form>
 </fieldset>
 {% endblock %}

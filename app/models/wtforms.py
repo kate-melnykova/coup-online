@@ -16,9 +16,13 @@ def no_special_symbols(form, field):
         raise ValidationError('Field has characters that are not allowed!')
 
 
-class LoginForm(Form):
-    name = StringField('Name', [validators.DataRequired,
+class CreateOrJoinGameForm(Form):
+    name = StringField('Enter your name*:', [validators.DataRequired,
                                 validators.Length(min=1, max=15),
                                 no_special_symbols,
                                 ])
-    game_id = StringField('Game_id')
+    n_players = StringField('Enter the number of players (including you)')
+    game_id = StringField('Game id (provided by the dealer)')
+
+class Challenge(Form):
+    challenge = BooleanField('I challenge you!')
