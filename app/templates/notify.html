@@ -1,10 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+<div>
+    {% if (user.name in game.get_alive_players()) and (user.name not in game.action.notified) %}
+        <form method="POST">
+            <p>  <input type="submit" name="OK_action" value="OK"></p>
+        </form>
+    {% endif %}
+    <p> Notified users:
+        {% for name in game.action.notified %}
+            {{name}} {% if not loop.last %}, {% endif %}
+        {% endfor %}
+    </p>
+</div>

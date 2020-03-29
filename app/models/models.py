@@ -100,7 +100,7 @@ class User:
         else:
             return i
 
-    def replace_card(self, type_, deck):
+    def replace_card(self, type_: int, deck: 'Deck'):
         assert self.is_alive, 'Trying to replace card for player who already lost the game'
         i = self.has_a_card(type_)
         if i >= 0:
@@ -112,7 +112,7 @@ class User:
         else:
             raise
 
-    def lose_life(self, type_):
+    def lose_life(self, type_: int):
         assert self.is_alive, 'Trying to take a life from a player with no lifes'
         i = self.has_a_card(type_)
         if i < 0:
@@ -142,7 +142,7 @@ class Action:
     @classmethod
     def action_to_int(cls, s: str) -> int or None:
         try:
-            idx = cls.action_to_int(s)
+            idx = cls.action_to_word.index(s)
         except ValueError:
             return None
         else:
@@ -177,20 +177,19 @@ class Action:
 
     def __init__(self, status=0, message='',
                  action=[-1, '', ''],
-                 challenge_action=[0, set(), ''],
+                 challenge_action=[0, list(), ''],
                  block = [0, ''],
-                 challenge_block = [0, set(), ''],
+                 challenge_block = [0, list(), ''],
                  lose_life = ['', ''],
-                 notified=set()):
+                 notified=list()):
         self.action = action
         # first index: action encoding, see action_to_word
         # second index: player name who made action
         # third index: the target of action if first index is 0 (coup), 4 (steal), 5 (assassinate)
 
-
         self.challenge_action = challenge_action
         # first index: 1 if challenged, -1 if accepted, 0 is undecided
-        # second index: set of users who don't want to challenge
+        # second index: list of user names who don't want to challenge
         # third index: if challenged, the name of person who challenges
 
         self.block = block
@@ -199,7 +198,7 @@ class Action:
 
         self.challenge_block = challenge_block
         # first index: 1 if blocking is accepted, -1 if not, 0 if undecided
-        # second index: set of names of users who don't want to challenge blocking
+        # second index: list of names of users who don't want to challenge blocking
         # third index: if challenged, name of the person who challenges
 
         self.lose_life = lose_life
@@ -207,8 +206,8 @@ class Action:
         # second index: which card
 
         self.status = status  # integer, encoding is stored in status_to_word
-        self.notified = notified  # set of all players who were notified of how the turn ended
-        self.message = message # is displayed to all players
+        self.notified = notified  # list of all players' names who were notified of how the turn ended
+        self.message = message  # is displayed to all players
 
     def serialize(self) -> str:
         d = dict()
@@ -221,6 +220,7 @@ class Action:
 
     @classmethod
     def deserialize(cls, data: str) -> 'Move':
+        print(f'Stored action data: {data}')
         d = json.loads(data)
         return cls(**d)
 
@@ -237,24 +237,26 @@ class Action:
             return False
 
         encoded = self.action_to_int(value)
-        if not encoded:
+        if encoded is None:
             return False
 
         self.action = [encoded, game.cur_player, target]  # TODO: assert target is a valid player name
         if value == 'income':
             # cannot be blocked or challenged
-            user = game.get_user(self.action_by)
+            user = game.get_user(game.cur_player)
             user.money += 1
             self.status = 6
             self.message = f'{game.cur_player} takes income.\n'
+            self.notified.append(game.cur_player)
             game.action = self
             game.save()
             return True
 
         if value == 'coup':
+            print('Coup is happening')
             self.status = 4
-            self.lose_life[0] = self.action_target
-            self.message = f'{game.cur_player} coup {self.action_target}.\n'
+            self.lose_life[0] = self.action[2]
+            self.message = f'{game.cur_player} coup {self.action[2]}.\n'
             game.action = self
             game.save()
 
@@ -287,7 +289,7 @@ class Action:
                 self.status = 4
                 self.lose_life = [game.cur_player, '']
         else:
-            self.challenge_action[1].add(by)
+            self.challenge_action[1].append(by)
             if len(self.challenge_action == self.n_players):
                 self.challenge_action[0] = -1
                 self.message += f'Action is NOT challenged.\n'
@@ -302,6 +304,7 @@ class Action:
                     user.money += 3
                     self.message += f'{game.cur_player} takes three coins.'
                     self.status = 6
+                    self.notified.append(game.cur_player)
                 else:
                     self.message += f'{game.cur_player} selects new playing cards.\n'
                     self.status = 5
@@ -323,7 +326,6 @@ class Action:
                 user.replace_card(encoded_card)
                 self.status = 4
                 self.lose_life = [by, '']
-
 
 
 class Game:
@@ -398,5 +400,34 @@ class Game:
             if user.name == name:
                 return user
         return None
+
+    def get_alive_players(self) -> List[str]:
+        return [user.name for user in self.all_users if user.is_alive]
+
+    def next_move(self) -> bool:
+        """
+        sets up the game for the next move if applicable
+        :return: True if the next move is possible, False if the game is finished
+        """
+        alive_players = self.get_alive_players()
+        if len(alive_players) == 1:
+            return False
+
+        self.turn_id += 1
+        self.action = Action()
+        # change cur_player
+        for i, player in enumerate(self.all_users):
+            if player.name == self.cur_player:
+                break
+
+        for i0 in range(i+1, self.n_players):
+            name = self.all_users[i0].name
+            if name in alive_players:
+                self.cur_player = name
+                return True
+
+        self.cur_player = alive_players[0]
+        print(f'New cur_player is {self.cur_player}')
+        return True
 
 

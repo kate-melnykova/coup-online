@@ -46,30 +46,18 @@
     </table>
 </div>
 <p></p>
-{% if game.action.action == -1 %}
-    {% if game.cur_player == user.name %}
-        {% includes 'action.html' %}
-    {% else %}
-        Waiting for action from {{ game.cur_player }}
-    {% endif %}
-{% elif game.action.challenged == 0 %}
-    <p> {{ game.action.action_to_str }} </p>
-    {% set action_type=game.action.action_mapping_to_word(game.action.action) %}
-    {% if action_type == 'coup' %}
-        {% if user.name == game.action.action_target %}
-            You lose one life. Select which one (to be added)
-        {% else %}
-            Waiting for {{game.action.action_target}} to select which influence to lose.
-        {% endif %}
-    {% elif game.action == 'income' %}
-        <form method="POST">
-            <p>  <input type="submit" name="OK_action" value="OK"></p>
-        </form>
-    <p>Already notified: {% for name in game.action.notified %}
-        {{name}} {% if not loop.last %}, {% endif %}
-        {% endfor %}
-    </p>
-    {% endif %}
+<p> {{ game.action.message }} </p>
+{% if game.action.status == 0 %}
+    {% include 'action.html' %}
+
+{% elif game.action.status == 1 %}
+    {% include 'challenge_action.html' %}
+
+{% elif game.action.status == 4 %}
+    {% include 'lose_life.html' %}
+
+{% elif game.action.status == 6 %}
+    {% include 'notify.html' %}
 
 {% endif %}
 {% endblock %}

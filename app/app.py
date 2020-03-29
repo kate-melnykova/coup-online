@@ -76,25 +76,56 @@ def play_coup():
     if game is None:
         return redirect(url_for('main'))
     name = request.cookies.get('COUP_name')
+    for user in game.all_users:
+        if user.name == name:
+            break
 
     if request.method == 'GET':
-        for user in game.all_users:
-            if user.name == name:
-                break
+        if game.action.status == 4:
+            # player loses life
+            player = game.get_user(game.action.lose_life[0])
+            if not player.playing_cards:
+                print('Killing a player with no influence')
+                raise
+            elif len(player.playing_cards) == 1:
+                player.lose_life(player.playing_cards[0])
+                game.action.message += f'{player.name} has no influence now.\n'
+                game.action.status = 6
         return render_template('play_coup.html', game=game, user=user)
 
     # method is POST
     # action/challenge/blocking/whatever was submitted
+    print(f'Game status {game.action.status}')
     if game.action.status == 0:
-        coup = request.form['coup']
-        steal = request.form['steal']
-        other = request.form['submit']
+        coup = request.form.get('coup', '')
+        steal = request.form.get('steal', '')
+        other = request.form.get('submit', '')
+        print(f'request.form {request.form}')
+        print(f'coup={coup}, steal={steal}, other={other}')
         if coup:
+            print('About to coup')
             game.action.do_action(game, 'coup', coup)
         elif steal:
+            print('About to steal')
             game.action.do_action(game, 'steal', steal)
         else:
+            print(f'About to {other}')
             game.action.do_action(game, other)
+
+    elif game.action.status == 4:
+
+
+    elif game.action.status == 6:
+        # user name was notified about action
+        if name not in game.action.notified:
+            game.action.notified.append(name)
+
+        if len(game.action.notified) >= len(game.get_alive_players()):
+            game.action.completed = 1
+            game.next_move()
+
+    game.save()
+    return render_template('play_coup.html', game=game, user=user)
 
 
 
