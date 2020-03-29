@@ -3,8 +3,9 @@ from datetime import datetime
 import itertools
 import json
 from time import sleep
-from typing import List
+from typing import List, Set
 import random
+from uuid import uuid4
 
 from models.db import db
 
@@ -18,20 +19,20 @@ class Deck:
         4: 'Ambassador',
     }
 
-    def reverse_mapping(self, type_):
-        for k, v in self.mapping:
-            if v == 'type_':
+    @classmethod
+    def reverse_mapping(cls, type_: str):
+        for k, v in cls.mapping.items():
+            if v == type_:
                 return k
 
     def __init__(self, cards=[]):
         self.all_cards = cards
 
     @classmethod
-    def create(cls, quantity, types=['Duke', 'Ambassador', 'Assassin', 'Contessa', 'Captain']):
+    def create(cls, quantity, card_types=Set[int]):
         instance = cls()
-        for type_ in types:
-            encoded = cls.reverse_mapping(type_)
-            instance.all_cards += [encoded] * quantity
+        for type_ in card_types:
+            instance.all_cards += [type_] * quantity
         return instance
 
     def draw(self) -> int or None:
@@ -44,12 +45,12 @@ class Deck:
     def add_card(self, type_):
         self.all_cards.append(type_)
 
-    def to_db(self):
+    def serialize(self):
         return json.dumps(self.all_cards)
 
     @staticmethod
-    def to_python(string: str) -> List[int]:
-        return Deck(cards=json.loads(string))
+    def deserialize(lst: List[int]) -> List[int]:
+        return Deck(cards=json.loads(lst))
 
 
 class User:
@@ -72,7 +73,7 @@ class User:
                     playing_cards=playing_cards,
                     killed=[])
 
-    def to_db(self):
+    def serialize(self):
         d = {
             'name': self.name,
             'money': self.money,
@@ -82,8 +83,9 @@ class User:
         return json.dumps(d)
 
     @classmethod
-    def to_python(cls, string: str) -> 'User':
-        return cls(**string)
+    def deserialize(cls, string: str) -> 'User':
+        data = json.loads(string)
+        return cls(**data)
 
     def has_a_card(self, type_: int) -> int:
         """
@@ -119,72 +121,108 @@ class User:
             card = self.playing_cards.pop(i)
             self.killed.append(card)
 
+    def print_playing_cards(self) -> List[str]:
+        return [Deck.mapping[card] for card in self.playing_cards]
 
-class Game:
-    """
-    self.challenged = 0  is no
-    self.challenged = 1 is pending
-    """
+    def print_killed(self) -> List[str]:
+        return [Deck.mapping[card] for card in self.killed]
 
-    def __init__(self, n_players, card_types, deck, all_users,
-                 turn_id, move, cur_player, winner):
-        self.n_players = n_players
-        self.card_types = card_types
-        self.deck = deck
-        self.all_users = all_users
-        self.turn_id = turn_id
-        self.move = move
-        self.cur_player = cur_player
-        self.winner = winner
+
+class Move:
+    def __init__(self, type_= None, value=-1):
+        if type_ is None:
+            self.move = -1
+            self.blocked = -1
+            self.challenged = []
+        elif type_ == 'move':
+            self.move = value
+            # TODO
+        elif type_ == 'blocked':
+            self.blocked = value
+        elif type_ == 'challenged':
+            self.challenged.append(value)
+            # TODO
+
+    def serialize(self) -> str:
+        d = [self.move, self.blocked, self.challenged]
+        return json.dumps(d)
 
     @classmethod
-    def load(cls, game_id: str) -> 'Game':
+    def deserialize(cls, data: str) -> 'Move':
+        d = json.loads(data)
+        self = cls()
+        self.move, self.blocked, self.challenged = d
+        return self
+
+
+class Game:
+    @classmethod
+    def load(cls, game_id: str) -> 'Game' or None:
+        """
+        loads the game with given game_id
+        """
         data = db.load(game_id)
         if data is None:
             return None
 
         data = json.loads(data)
-        return cls(data)
+        instance = cls()
+        instance.id = data['id']
+        instance.n_players = data['n_players']
+        instance.deck = Deck.deserialize(data['deck'])
+        instance.all_users = [User.deserialize(user_data) for user_data in data['all_users']]
+        instance.turn_id = data['turn_id']
+        instance.move = Move.deserialize(data['move'])
+        instance.cur_player = data['cur_player']
+        instance.winner = data['winner']
+        return instance
 
     def save(self) -> None:
         d = {
+            'id': self.id,
             'n_players': self.n_players,
-            'card_types': self.card_types,
-            'deck': self.deck.to_db(),
-            'all_users': [user.to_db() for user in self.all_users],
+            'deck': self.deck.serialize(),
+            'all_users': [user.serialize() for user in self.all_users],
             'turn_id': self.turn_id,
-            'move': self.move,
-            'cur_player': self.cur_player.to_db(),
+            'move': self.move.serialize(),
+            'cur_player': self.cur_player,
             'winner': self.winner
         }
         d = json.dumps(d)
-        db.save(self.game_id, d)
+        db.save(self.id, d)
 
-    def create(self, n_players,
-               card_types=['Duke', 'Ambassador', 'Assassin', 'Contessa', 'Captain']):
-        self.n_players = n_players
-        self.card_types = [Deck.reverse_mapping(type_) for type_ in card_types]
+    @classmethod
+    def create(cls, n_players,
+               card_types={'Duke', 'Ambassador', 'Assassin', 'Contessa', 'Captain'}) -> 'Game':
+        card_types = set(Deck.reverse_mapping(t) for t in card_types)
         if n_players < 7:
             quantity = 3
         elif n_players < 9:
             quantity = 4
         else:
             quantity = 5
+
+        self = cls()
+        self.id = str(uuid4())[:4]
+        self.n_players = n_players
         self.deck = Deck.create(quantity=quantity, card_types=card_types)
         self.all_users = list()
         self.turn_id = -1
-        self.move = None
+        self.move = Move()
         self.cur_player = None
         self.winner = None
         self.save()
+        return self
 
     def add_player(self, name: str) -> None:
-        user = User(name, self.deck)
+        user = User.create(name, self.deck)
         self.all_users.append(user)
         if len(self.all_users) == self.n_players:
             self.turn_id = 0
+            self.cur_player = self.all_users[0].name
         self.save()
 
+    '''
     def challenge_to_have(self, user_accused, user_accuses, type_) -> bool:
         """
         User_accuses challenges user_accused to have a card of type_
@@ -234,3 +272,4 @@ class Game:
         if winner is not None:
             print(f'')
         self.play()
+    '''

@@ -2,15 +2,21 @@
 
 {% block content %}
 <div>
-    <p>Thanks for joining the game, {user.name}!</p>
+    <p>Thanks for joining the game, {{name}}!</p>
     <p> The game id is</p>
-    <p align="center"> {game.id}</p>
+    <p align="center"> {{game.id}}</p>
     <p> Please send id to other players, so they can join.</p>
     <p>
-    <form action="./create_game">
-        <input type="submit" name="start" value="Start game">
-        (will reload the page if not all players have been added)
+    <form>
+        <input type="submit" name="refresh" value="Refresh">
+        (will reload the page if not all players have been added or upload start_page)
     </form>
     </p>
+</div>
+<div>
+    <p> Currently in the game:</p>
+    {% for user in game.all_users %}
+        {{user.name}} {% if not loop.last %}, {% endif %}
+    {% endfor %}
 </div>
 {% endblock %}

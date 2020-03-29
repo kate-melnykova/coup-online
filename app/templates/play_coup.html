@@ -1,38 +1,57 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<div> You are playing under name {{user.name }}</div>
 <div>
-    <p> {user.name}, you have
-        {% for card in user.playing cards %}
-            { card.type_ },
-        {% endfor %}
-    </p>
-    <p>
-        Lost lives:
-        {% for card in user.killed %}
-           { card.type_}
-        {% endfor %}
-    </p>
-</div>
-
-<div>
-    <ul>
+    <table>
+        <tr>
+            <th> Current player </th>
+            <th> Name </th>
+            <th> Coins </th>
+            <th> Influence</th>
+            <th> Lost influence</th>
+        </tr>
         {% for player in game.all_users %}
-        <li>{% if player.name == user.name %}
-            <span class="borderstyle">{ user.name }</span>
-            {% else %}
-            <span> { player.name }</span>
-            {% endif %}
-        </li>
+        <tr>
+            <td>{% if player.name == game.cur_player %} plays {% endif %}</td>
+            <td>
+                {% if player.name == user.name %}
+                    you
+                {% else %}
+                    <span> {{ player.name }}</span>:
+                {% endif %}
+            </td>
+            <td> {{player.money}}  </td>
+            <td>
+                {% if player.name == user.name %}
+                    {% for card in user.print_playing_cards() %}
+                        {{ card }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                {% else %}
+                    {% for card in user.print_playing_cards() %}
+                        unknown{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </td>
+            <td>
+                {% for card in user.print_killed() %}
+                   {{ card }},
+                {% endfor %}
+            </td>
+        </tr>
         {% endfor %}
-    </ul>
+    </table>
 </div>
-{% if player.name == user.name %}
+<p> The cur_player is {{game.cur_player}}</p>
+{% if game.cur_player == user.name %}
 <div>
+    {% if user.money > 9 %}
+    I coup # TODO
+    {% endif %}
     Select one of the following options:
     <fieldset>
         <form method="POST">
-            <p> I take income <input type="submit" name="submit" value="income"></p>
+            <p> <input type="submit" name="submit" value="income"> I take income </p>
             <p> I take a foreign aid <input type="submit" name="submit" value="foreign_aid"></p>
             <p> I am a Duke and I take taxes <input type="submit" name="submit" value="taxes"></p>
             <p> I am a Captain and I steal from <br>

@@ -24,5 +24,6 @@ class CreateOrJoinGameForm(Form):
     n_players = StringField('Enter the number of players (including you)')
     game_id = StringField('Game id (provided by the dealer)')
 
+
 class Challenge(Form):
     challenge = BooleanField('I challenge you!')

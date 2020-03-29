@@ -3,14 +3,13 @@
 {% block content %}
 Welcome to the coup online! No login or registration required.
 <fieldset>
-    <form action="./game" method="POST">
+    <form action="./create_or_join" method="POST">
         {{ form.csrf }}
         <table>
             <tr>
                 <td>{{form.name.label}}</td>
                 <td>{{ form.name(class="css_class") }}</td>
             </tr>
-            <hr>
             <tr>
                 <td>{{form.n_players.label}}</td>
                 <td>
