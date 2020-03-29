@@ -1,5 +1,5 @@
 from flask import Flask, render_template, redirect, request, flash, url_for, \
-    make_response
+    make_response, jsonify
 
 from models.models import Game
 from models.wtforms import CreateOrJoinGameForm
@@ -39,22 +39,34 @@ def create_or_join():
     return r
 
 
-@app.route('/waiting')
+@app.route('/waiting', methods=['GET', 'POST'])
 def waiting():
-    # check if all players joined the game
+    if request.method == 'GET':
+        # check if all players joined the game
+        game_id = request.cookies.get('COUP_game_id')
+        name = request.cookies.get('COUP_name')
+
+        # load game with given game_id
+        game = Game.load(game_id=game_id)
+        if game is None:
+            return redirect(url_for('main'))
+        if len(game.all_users) == game.n_players:
+            game.turn_id = 0
+            game.save()
+            return redirect(url_for('play_coup'))
+        else:
+            return render_template('waiting.html', game=game, name=name)
+
     game_id = request.cookies.get('COUP_game_id')
-    name = request.cookies.get('COUP_name')
-    print(f'Player name is {name}')
     # load game with given game_id
     game = Game.load(game_id=game_id)
     if game is None:
-        return redirect(url_for('main'))
-    if len(game.all_users) == game.n_players:
-        game.turn_id = 0
-        game.save()
-        return redirect(url_for('play_coup'))
+        url = url_for('main')
+    elif game.turn_id > -1:
+        url = url_for('play_coup')
     else:
-        return render_template('waiting.html', game=game, name=name)
+        url = None
+    return jsonify({'url': url})
 
 
 @app.route('/play_coup', methods=['GET', 'POST'])
@@ -64,10 +76,20 @@ def play_coup():
     if game is None:
         return redirect(url_for('main'))
     name = request.cookies.get('COUP_name')
-    for user in game.all_users:
-        if user.name == name:
-            break
-    return render_template('play_coup.html', game=game, user=user)
+
+    if request.method == 'GET':
+        for user in game.all_users:
+            if user.name == name:
+                break
+        return render_template('play_coup.html', game=game, user=user)
+
+    # method is POST
+    # move was submitted
+    move = game.move
+    if request.form.coup.data:
+        pass
+
+
 
 
 

@@ -54,8 +54,8 @@ class Deck:
 
 
 class User:
-    is_alive = property(lambda self: bool(self.cards))
-    lives = property(lambda self: len(self.cards))
+    is_alive = property(lambda self: bool(self.playing_cards))
+    lives = property(lambda self: len(self.playing_cards))
 
     def __init__(self, name, money, playing_cards, killed):
         assert len(playing_cards) + len(killed) == 2, f'User {name} has not two cards'
@@ -128,27 +128,58 @@ class User:
         return [Deck.mapping[card] for card in self.killed]
 
 
-class Move:
-    def __init__(self, type_= None, value=-1):
-        if type_ is None:
-            self.move = -1
-            self.blocked = -1
-            self.challenged = []
-        elif type_ == 'move':
-            self.move = value
-            # TODO
-        elif type_ == 'blocked':
-            self.blocked = value
-        elif type_ == 'challenged':
-            self.challenged.append(value)
-            # TODO
+class Action:
+    action_mapping_to_word = [
+        'coup',
+        'income',
+        'foreign aid',
+        'taxes',
+        'steal',
+        'assassinate',
+        'ambassador'
+    ]
+
+    @classmethod
+    def action_mapping_to_int(cls, s: str) -> int or None:
+        try:
+            idx = cls.action_mapping_to_int(s)
+        except ValueError:
+            return None
+        else:
+            return idx
+
+    _blocking_mapping = {
+        'assassinate': ['contessa'],
+        'steal': ['captain', 'ambassador'],
+        'foreign aid': ['duke']
+    }
+
+    @classmethod
+    def blocking_mapping_to_int(cls, action: int):
+        action_word = cls.action_mapping_to_word(action)
+        blocking_cards_word = cls._blocking_mapping.get(action_word, [])
+        return [Deck.reverse_mapping(card_word) for card_word in blocking_cards_word]
+
+    def __init__(self):
+        self.move = -1
+        self.challenged_data = []
+        self.challenged = 0
+        self.blocked = 0
+        self.challenged2_data = []
+        self.challenged2 = 0
+
+    def action(self, value: str):
+        if self.move < 0:
+
 
     def serialize(self) -> str:
+        # TODO
         d = [self.move, self.blocked, self.challenged]
         return json.dumps(d)
 
     @classmethod
     def deserialize(cls, data: str) -> 'Move':
+        # TODO
         d = json.loads(data)
         self = cls()
         self.move, self.blocked, self.challenged = d

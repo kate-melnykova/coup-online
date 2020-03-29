@@ -13,12 +13,15 @@
         </tr>
         {% for player in game.all_users %}
         <tr>
-            <td>{% if player.name == game.cur_player %} plays {% endif %}</td>
+            <td>{% if player.name == game.cur_player %} plays
+                {% elif not player.is_alive %}
+                killed
+                {% endif %}</td>
             <td>
                 {% if player.name == user.name %}
                     you
                 {% else %}
-                    <span> {{ player.name }}</span>:
+                    <span> {{ player.name }}</span>
                 {% endif %}
             </td>
             <td> {{player.money}}  </td>
@@ -42,49 +45,56 @@
         {% endfor %}
     </table>
 </div>
-<p> The cur_player is {{game.cur_player}}</p>
+<p></p>
 {% if game.cur_player == user.name %}
 <div>
     {% if user.money > 9 %}
-    I coup # TODO
+        <fieldset>
+            <form method="POST">
+            I coup
+                {% for player in game.all_users %}
+                    {% if ((player.name != user.name) and (player.is_alive)) %}
+                        <input type="submit" name="coup" value={{player.name}}>
+                    {% endif %}
+                {% endfor %}
+            </form>
+        </fieldset>
+    {% else %}
+        Select one of the following options:
+        <fieldset>
+            <form method="POST">
+                {% if user.money > 6 %}
+                    {% for player in game.all_users %}
+                        {% if ((player.name != user.name) and (player.is_alive)) %}
+                            <p> I coup <input type="submit" name="coup" value={{player.name}}></p>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+                <p> I take <input type="submit" name="submit" value="income">  </p>
+                <p> I take <input type="submit" name="submit" value="foreign aid">  </p>
+                <p> I am a Duke and I take <input type="submit" name="submit" value="taxes"> </p>
+                <p> I am a Captain and I steal from
+                    {% for player in game.all_users %}
+                        {% if ((player.name != user.name) and (player.is_alive)) and (player.money > 1) %}
+                            <input type="submit" name="steal" value={{player.name}}>
+                        {% endif %}
+                    {% endfor %}
+                </p>
+                {% if user.money > 2 %}
+                    <p>
+                        I am an Assassin and I assassinate
+                        {% for player in game.all_users %}
+                            {% if ((player.name != user.name) and (player.is_alive)) %}
+                                {% set submit_name = 'assassinate ' + player.name %}
+                                <input type="submit" name="assassinate" value={{submit_name}}>
+                            {% endif %}
+                        {% endfor %}
+                    </p>
+                {% endif %}
+                <p> I am <input type="submit" name="submit" value="ambassador"></p>
+            </form>
+        </fieldset>
     {% endif %}
-    Select one of the following options:
-    <fieldset>
-        <form method="POST">
-            <p> <input type="submit" name="submit" value="income"> I take income </p>
-            <p> I take a foreign aid <input type="submit" name="submit" value="foreign_aid"></p>
-            <p> I am a Duke and I take taxes <input type="submit" name="submit" value="taxes"></p>
-            <p> I am a Captain and I steal from <br>
-                <table>
-                    <tr>
-                        {% for player in game.all_users %}
-                            {% if player.name != user.name %}
-                                {% set submit_name = 'captain_' + player.name %}
-                                <td class="borderstyle">
-                                    <input type="submit" name="submit" value=submit_name>
-                                </td>
-                            {% endif %}
-                        {% endfor %}
-                    </tr>
-                </table>
-            </p>
-            <p>I am an Assassin and I kill <br>
-                <table>
-                    <tr>
-                        {% for player in game.all_users %}
-                            {% if player.name != user.name %}
-                                {% set submit_name = 'assassin_' + player.name %}
-                                <td class="borderstyle">
-                                    <input type="submit" name="submit" value=submit_name>
-                                </td>
-                            {% endif %}
-                        {% endfor %}
-                    </tr>
-                </table>
-            </p>
-            <p> I am Ambassador <input type="submit" name="submit" value="ambassador"></p>
-        </form>
-    </fieldset>
 </div>
 {% endif %}
 {% endblock %}

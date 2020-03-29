@@ -1,17 +1,15 @@
 {% extends 'base.html' %}
 
+{% block jsfile %}
+<script src="{{url_for('static', filename='waiting.js')}}"></script>
+{% endblock %}
+
 {% block content %}
 <div>
     <p>Thanks for joining the game, {{name}}!</p>
     <p> The game id is</p>
     <p align="center"> {{game.id}}</p>
     <p> Please send id to other players, so they can join.</p>
-    <p>
-    <form>
-        <input type="submit" name="refresh" value="Refresh">
-        (will reload the page if not all players have been added or upload start_page)
-    </form>
-    </p>
 </div>
 <div>
     <p> Currently in the game:</p>

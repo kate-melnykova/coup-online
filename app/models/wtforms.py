@@ -25,5 +25,4 @@ class CreateOrJoinGameForm(Form):
     game_id = StringField('Game id (provided by the dealer)')
 
 
-class Challenge(Form):
-    challenge = BooleanField('I challenge you!')
+
