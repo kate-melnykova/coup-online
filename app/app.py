@@ -84,10 +84,17 @@ def play_coup():
         return render_template('play_coup.html', game=game, user=user)
 
     # method is POST
-    # move was submitted
-    move = game.move
-    if request.form.coup.data:
-        pass
+    # action/challenge/blocking/whatever was submitted
+    if game.action.status == 0:
+        coup = request.form['coup']
+        steal = request.form['steal']
+        other = request.form['submit']
+        if coup:
+            game.action.do_action(game, 'coup', coup)
+        elif steal:
+            game.action.do_action(game, 'steal', steal)
+        else:
+            game.action.do_action(game, other)
 
 
 

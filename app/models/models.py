@@ -129,20 +129,20 @@ class User:
 
 
 class Action:
-    action_mapping_to_word = [
-        'coup',
-        'income',
-        'foreign aid',
-        'taxes',
-        'steal',
-        'assassinate',
-        'ambassador'
-    ]
+    action_to_word = ['coup', 'income', 'foreign aid', 'taxes', 'steal', 'assassinate', 'ambassador']
+    status_to_word = {0: 'waiting for action',
+                      1: 'waiting for challenge of action',
+                      2: 'waiting for blocking',
+                      3: 'waiting for challenging blocking',
+                      4: 'losing_life',
+                      5: 'waiting for ambassador to complete his move',
+                      6: 'notify all about completion',
+                      7: 'completed'}
 
     @classmethod
-    def action_mapping_to_int(cls, s: str) -> int or None:
+    def action_to_int(cls, s: str) -> int or None:
         try:
-            idx = cls.action_mapping_to_int(s)
+            idx = cls.action_to_int(s)
         except ValueError:
             return None
         else:
@@ -156,34 +156,174 @@ class Action:
 
     @classmethod
     def blocking_mapping_to_int(cls, action: int):
-        action_word = cls.action_mapping_to_word(action)
+        action_word = cls.action_to_word(action)
         blocking_cards_word = cls._blocking_mapping.get(action_word, [])
         return [Deck.reverse_mapping(card_word) for card_word in blocking_cards_word]
 
-    def __init__(self):
-        self.move = -1
-        self.challenged_data = []
-        self.challenged = 0
-        self.blocked = 0
-        self.challenged2_data = []
-        self.challenged2 = 0
+    def action_to_str(self) -> str:
+        action_to_str = [
+            f'{self.action_by} coup {self.action_target}',
+            f'{self.action_by} takes income',
+            f'{self.action_by} foreign aid',
+            f'{self.action_by} takes taxes as a Duke',
+            f'{self.action_by} steals from {self.action_target}',
+            f'{self.action_by} assassinates {self.action_target}',
+            f'{self.action_by} acts as an ambassador'
+        ]
+        if self.action < 0:
+            return 'Waiting for action'
+        else:
+            return action_to_str[self.action]
 
-    def action(self, value: str):
-        if self.move < 0:
+    def __init__(self, status=0, message='',
+                 action=[-1, '', ''],
+                 challenge_action=[0, set(), ''],
+                 block = [0, ''],
+                 challenge_block = [0, set(), ''],
+                 lose_life = ['', ''],
+                 notified=set()):
+        self.action = action
+        # first index: action encoding, see action_to_word
+        # second index: player name who made action
+        # third index: the target of action if first index is 0 (coup), 4 (steal), 5 (assassinate)
 
+
+        self.challenge_action = challenge_action
+        # first index: 1 if challenged, -1 if accepted, 0 is undecided
+        # second index: set of users who don't want to challenge
+        # third index: if challenged, the name of person who challenges
+
+        self.block = block
+        # first index: 1 if blocked, -1 if not, 0 is undecided
+        # second index: name of the card that blocks
+
+        self.challenge_block = challenge_block
+        # first index: 1 if blocking is accepted, -1 if not, 0 if undecided
+        # second index: set of names of users who don't want to challenge blocking
+        # third index: if challenged, name of the person who challenges
+
+        self.lose_life = lose_life
+        # first index: who loses life
+        # second index: which card
+
+        self.status = status  # integer, encoding is stored in status_to_word
+        self.notified = notified  # set of all players who were notified of how the turn ended
+        self.message = message # is displayed to all players
 
     def serialize(self) -> str:
-        # TODO
-        d = [self.move, self.blocked, self.challenged]
+        d = dict()
+        for attribute in ['action', 'challenge_action',
+                          'block', 'challenge_block',
+                          'lose_life', 'notified',
+                          'status', 'message']:
+            d[attribute] = getattr(self, attribute)
         return json.dumps(d)
 
     @classmethod
     def deserialize(cls, data: str) -> 'Move':
-        # TODO
         d = json.loads(data)
-        self = cls()
-        self.move, self.blocked, self.challenged = d
-        return self
+        return cls(**d)
+
+    def do_action(self, game: 'Game', value: str, target='') -> bool:
+        """
+        performs the action
+        :param game: game that has this action
+        :param value: string that represents the action. Should be in action_to_word
+        :param target: name of the player who is targeted
+            (required if value='coup' or 'steal', or assassinate')
+        :return: True if action is possible, False otherwise
+        """
+        if self.status:
+            return False
+
+        encoded = self.action_to_int(value)
+        if not encoded:
+            return False
+
+        self.action = [encoded, game.cur_player, target]  # TODO: assert target is a valid player name
+        if value == 'income':
+            # cannot be blocked or challenged
+            user = game.get_user(self.action_by)
+            user.money += 1
+            self.status = 6
+            self.message = f'{game.cur_player} takes income.\n'
+            game.action = self
+            game.save()
+            return True
+
+        if value == 'coup':
+            self.status = 4
+            self.lose_life[0] = self.action_target
+            self.message = f'{game.cur_player} coup {self.action_target}.\n'
+            game.action = self
+            game.save()
+
+    def challenge_action(self, game: 'Game', by: str, reply: bool) -> bool:
+        if game.status != 1:
+            return False
+
+        if reply:
+            self.challenge_action = [1, self.challenge_action[1], by]
+            self.message += f'Action was challenged by {by}.\n'
+            challenged_card_map = {
+                'taxes': 'Duke',
+                'steal': 'Captain',
+                'assassinate': 'Assassin',
+                'ambassador': 'Ambassador'
+            }
+            card = challenged_card_map[self.action_to_word(self.action[0])]
+            encoded_card = Deck.reverse_mapping(card)
+            if encoded_card in User.playing_cards:
+                self.message += f'Challenge found that {game.cur_player} has the {card}.\n'
+                self.message += f'{ by } loses a life and {game.cur_player} gets a new card.\n'
+                user = game.get_user({game.cur_player})
+                user.replace_card(encoded_card)
+                self.status = 4
+                self.lose_life = [by, '']
+            else:
+                self.message += f'Challenge found that {game.cur_player} does not have the {card}.\n'
+                self.message += f'{game.cur_player} loses a life.\n'
+                # TODO replace card
+                self.status = 4
+                self.lose_life = [game.cur_player, '']
+        else:
+            self.challenge_action[1].add(by)
+            if len(self.challenge_action == self.n_players):
+                self.challenge_action[0] = -1
+                self.message += f'Action is NOT challenged.\n'
+                # next step is either block of perform action
+                # note that if we are here, the action can be challenged
+                action_word = self.action_to_word(self.action[0])
+                if action_word in ['steal', 'assassinate']:
+                    self.message += f'Considering blocking.\n'
+                    self.status = 2
+                elif action_word == 'taxes':
+                    user = game.get_user(game.cur_player)
+                    user.money += 3
+                    self.message += f'{game.cur_player} takes three coins.'
+                    self.status = 6
+                else:
+                    self.message += f'{game.cur_player} selects new playing cards.\n'
+                    self.status = 5
+            game.save()
+            return True
+
+    def block(self, game: 'Game', by: str):
+        action = self.action[0]
+        if action == 'foreign aid':
+            encoded_card = Deck.reverse_mapping('Duke')
+            if encoded_card in User.playing_cards:
+                self.message += 'Challenge found that {game.cur_player} does not have a Duke.\n'
+                self.message += '{ game.cur_player } loses a life.\n'
+                self.status = 4
+                self.lose_life = [game.cur_player.name, '']
+            else:
+                self.message += 'Challenge found that {game.cur_player} has a Duke.\n'
+                user = game.get_user({game.cur_player})
+                user.replace_card(encoded_card)
+                self.status = 4
+                self.lose_life = [by, '']
+
 
 
 class Game:
@@ -203,7 +343,7 @@ class Game:
         instance.deck = Deck.deserialize(data['deck'])
         instance.all_users = [User.deserialize(user_data) for user_data in data['all_users']]
         instance.turn_id = data['turn_id']
-        instance.move = Move.deserialize(data['move'])
+        instance.action = Action.deserialize(data['action'])
         instance.cur_player = data['cur_player']
         instance.winner = data['winner']
         return instance
@@ -215,7 +355,7 @@ class Game:
             'deck': self.deck.serialize(),
             'all_users': [user.serialize() for user in self.all_users],
             'turn_id': self.turn_id,
-            'move': self.move.serialize(),
+            'action': self.action.serialize(),
             'cur_player': self.cur_player,
             'winner': self.winner
         }
@@ -239,7 +379,7 @@ class Game:
         self.deck = Deck.create(quantity=quantity, card_types=card_types)
         self.all_users = list()
         self.turn_id = -1
-        self.move = Move()
+        self.action = Action()
         self.cur_player = None
         self.winner = None
         self.save()
@@ -253,54 +393,10 @@ class Game:
             self.cur_player = self.all_users[0].name
         self.save()
 
-    '''
-    def challenge_to_have(self, user_accused, user_accuses, type_) -> bool:
-        """
-        User_accuses challenges user_accused to have a card of type_
-        :return: true if the original claim is supported and false otherwise
-        """
-        i = user_accused.has_a_card(type_)
-        if i >= 0:
-            # claim is backed-up
-            print(f'{self.name} has {type_}')
-            user_accused.replace_card()
-            self.lose_one_life(user_accuses)
-            return True
-        else:
-            print(f'{user_accused.name} does not have {type_}')
-            self.lose_one_life(user_accused)
-            return False
+    def get_user(self, name: str) -> 'User' or None:
+        for user in self.all_users:
+            if user.name == name:
+                return user
+        return None
 
-    def play(self, action, towards=None):
-        if self.winner is not None:
-            return f'{self.winner} won'
 
-        # select user
-        user = next(self.plays)
-        if action == 'Income':
-            print(f'{self.name}: I take income')
-            self.money += 1
-
-        elif action == 'Foreign aid':
-            print(f'{self.name}: I take a foreign aid')
-            print('Waiting for Dukes to block...')
-            # wait
-            # TODO
-
-        elif action == 'Taxes':
-            print(f'{self.name}: I am a Duke and I collect taxes. Challenge? Y/n')
-            # ask if challenged
-            # TODO
-            user_accuses = input()
-            if user_accuses:
-                supported = self.challenge_to_have(user, user_accuses, 'Duke')
-                if supported:
-                    user.money += 3
-            else:
-                user.money += 3
-
-        winner = self.is_winner()
-        if winner is not None:
-            print(f'')
-        self.play()
-    '''

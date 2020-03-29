@@ -1,0 +1,49 @@
+<div>
+        {% if user.money > 9 %}
+            <fieldset>
+                <form method="POST">
+                I coup
+                    {% for player in game.all_users %}
+                        {% if ((player.name != user.name) and (player.is_alive)) %}
+                            <input type="submit" name="coup" value={{player.name}}>
+                        {% endif %}
+                    {% endfor %}
+                </form>
+            </fieldset>
+        {% else %}
+            Select one of the following options:
+            <fieldset>
+                <form method="POST">
+                    {% if user.money > 6 %}
+                        {% for player in game.all_users %}
+                            {% if ((player.name != user.name) and (player.is_alive)) %}
+                                <p> I coup <input type="submit" name="coup" value={{player.name}}></p>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    <p> I take <input type="submit" name="submit" value="income">  </p>
+                    <p> I take <input type="submit" name="submit" value="foreign aid">  </p>
+                    <p> I am a Duke and I take <input type="submit" name="submit" value="taxes"> </p>
+                    <p> I am a Captain and I steal from
+                        {% for player in game.all_users %}
+                            {% if ((player.name != user.name) and (player.is_alive)) and (player.money > 1) %}
+                                <input type="submit" name="steal" value={{player.name}}>
+                            {% endif %}
+                        {% endfor %}
+                    </p>
+                    {% if user.money > 2 %}
+                        <p>
+                            I am an Assassin and I assassinate
+                            {% for player in game.all_users %}
+                                {% if ((player.name != user.name) and (player.is_alive)) %}
+                                    {% set submit_name = 'assassinate ' + player.name %}
+                                    <input type="submit" name="assassinate" value={{submit_name}}>
+                                {% endif %}
+                            {% endfor %}
+                        </p>
+                    {% endif %}
+                    <p> I am <input type="submit" name="submit" value="ambassador"></p>
+                </form>
+            </fieldset>
+        {% endif %}
+    </div>
