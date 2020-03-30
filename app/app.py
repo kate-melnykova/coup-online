@@ -76,9 +76,7 @@ def play_coup():
     if game is None:
         return redirect(url_for('main'))
     name = request.cookies.get('COUP_name')
-    for user in game.all_users:
-        if user.name == name:
-            break
+    user = game.get_user(name)
 
     if request.method == 'GET':
         if game.action.status == 4:
@@ -90,7 +88,12 @@ def play_coup():
             elif len(player.playing_cards) == 1:
                 player.lose_life(player.playing_cards[0])
                 game.action.message += f'{player.name} has no influence now.\n'
-                game.action.status = 6
+                game.action.status = game.action.lose_life[2]
+        if game.action.status == 5:
+            game.action.do_perform_action(game)
+
+        if len(game.get_alive_players()) == 1:
+            return redirect(url_for('winning'))
         return render_template('play_coup.html', game=game, user=user)
 
     # method is POST
@@ -99,33 +102,86 @@ def play_coup():
     if game.action.status == 0:
         coup = request.form.get('coup', '')
         steal = request.form.get('steal', '')
+        assassinate = request.form.get('assassinate', '')
         other = request.form.get('submit', '')
         print(f'request.form {request.form}')
         print(f'coup={coup}, steal={steal}, other={other}')
         if coup:
-            print('About to coup')
             game.action.do_action(game, 'coup', coup)
         elif steal:
-            print('About to steal')
             game.action.do_action(game, 'steal', steal)
+        elif assassinate:
+            game.action.do_action(game, 'assassinate', assassinate)
         else:
-            print(f'About to {other}')
             game.action.do_action(game, other)
 
+    elif game.action.status == 1:
+        is_challenged = request.form['challenge']
+        is_challenged = True if is_challenged == 'yes' else False
+        game.action.do_challenge_action(game, name, is_challenged)
+
+    elif game.action.status == 2:
+        value = request.form['block']
+        if value == 'no':
+            game.action.do_block(game, False, name)
+        elif value == 'yes':
+            action_word = game.action.action_to_word[game.action.action[0]]
+            if action_word == 'assassinate':
+                card = game.deck.reverse_mapping('Contessa')
+            elif action_word == 'foreign aid':
+                card = game.deck.reverse_mapping('Duke')
+            game.action.do_block(game, True, name, card)
+        else:
+            card = game.deck.reverse_mapping(value)
+            game.action.do_block(game, True, name, card)
+
+    elif game.action.status == 3:
+        reply = request.form['submit']
+        reply = True if reply == 'yes' else False
+        game.action.do_challenge_block(game, reply, name)
+
     elif game.action.status == 4:
+        # TODO move it under the Action class as a function and call it
+        if game.action.lose_life[0] == name:
+            card_name = request.form['to_kill']
+            card_type = game.deck.reverse_mapping(card_name)
+            user.lose_life(card_type)
+            # life can be lost either via assassination
+            game.action.status = game.action.lose_life[2]
 
+    elif game.action.status == 5:
+        game.action.do_perform_action(game)
 
-    elif game.action.status == 6:
+    if game.action.status == 6:
         # user name was notified about action
         if name not in game.action.notified:
             game.action.notified.append(name)
 
         if len(game.action.notified) >= len(game.get_alive_players()):
             game.action.completed = 1
-            game.next_move()
+            is_continued = game.next_move()
+            if not is_continued:
+                game.save()
+                return redirect(url_for('winning'))
+
+    if game.action.status == 7:
+        ...
 
     game.save()
     return render_template('play_coup.html', game=game, user=user)
+
+
+@app.route('/winning')
+def winning():
+    game_id = request.cookies.get('COUP_game_id')
+    game = Game.load(game_id)
+    if game is None:
+        return redirect(url_for('main'))
+    name = request.cookies.get('COUP_name')
+    for user in game.all_users:
+        if user.name == name:
+            break
+    return render_template('winning.html', game=game, user=user)
 
 
 

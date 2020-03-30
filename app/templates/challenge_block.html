@@ -1,10 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% if user.name != game.action.block[2] %}
+<p>
+Do you want to challenge blocking?
+</p>
+<p>
+    <form method="POST">
+        <input type="submit" name="submit" value="yes">
+         or
+        <input type="submit" name="submit" value="no">
+    </form>
+</p>
+{% endif %}

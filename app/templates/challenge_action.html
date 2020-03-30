@@ -1,18 +1,20 @@
 <div>
-    {% set action_type=game.action.action_mapping_to_word(game.action.action) %}
-    {% if action_type == 'coup' %}
-        {% if user.name == game.action.action_target %}
-            You lose one life. Select which one (to be added)
-        {% else %}
-            Waiting for {{game.action.action_target}} to select which influence to lose.
-        {% endif %}
-    {% elif game.action == 'income' %}
-        <form method="POST">
-            <p>  <input type="submit" name="OK_action" value="OK"></p>
-        </form>
-        <p>Already notified: {% for name in game.action.notified %}
-            {{name}} {% if not loop.last %}, {% endif %}
-            {% endfor %}
+    {% if user.name != game.cur_player %}
+        <p>Do you want to challenge?</p>
+        <p>
+            <form method="POST">
+                <input type="submit" name="challenge" value="yes">
+                 or
+                <input type="submit" name="challenge" value="no">
+            </form>
         </p>
     {% endif %}
+    <p>
+        Waiting for approval/challenge from
+        {% for name in game.get_alive_players() %}
+            {% if name not in game.action.challenge_action[1] %}
+                {{name}} {% if not loop.last %}, {% endif %}
+            {% endif %}
+        {% endfor %}
+    </p>
 </div>

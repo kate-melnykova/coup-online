@@ -1,10 +1,46 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'base.html' %}
 
-</body>
-</html>
+{% block content %}
+<div> You are playing under name {{user.name }}</div>
+<div>
+    <table>
+        <tr>
+            <th> Current player </th>
+            <th> Name </th>
+            <th> Coins </th>
+            <th> Influence</th>
+            <th> Lost influence</th>
+        </tr>
+        {% for player in game.all_users %}
+        <tr>
+            <td>{% if player.name == game.cur_player %} plays
+                {% elif not player.is_alive %}
+                killed
+                {% endif %}</td>
+            <td>
+                {% if player.name == user.name %}
+                    you
+                {% else %}
+                    <span> {{ player.name }}</span>
+                {% endif %}
+            </td>
+            <td> {{player.money}}  </td>
+            <td>
+                {% for card in player.print_playing_cards() %}
+                    {{ card }} {% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </td>
+            <td>
+                {% for card in player.print_killed() %}
+                   {{ card }} {% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+<div>
+    <p> The game is over! {{game.get_alive_players()[0]}} wins.</p>
+    <p> <a href="/">Start a new game?</a> </p>
+</div>
+{% endblock %}

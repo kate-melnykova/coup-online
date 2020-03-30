@@ -27,18 +27,18 @@
             <td> {{player.money}}  </td>
             <td>
                 {% if player.name == user.name %}
-                    {% for card in user.print_playing_cards() %}
-                        {{ card }}{% if not loop.last %}, {% endif %}
+                    {% for card in player.print_playing_cards() %}
+                        {{ card }} {% if not loop.last %}, {% endif %}
                     {% endfor %}
                 {% else %}
-                    {% for card in user.print_playing_cards() %}
-                        unknown{% if not loop.last %}, {% endif %}
+                    {% for card in player.print_playing_cards() %}
+                        unknown {% if not loop.last %}, {% endif %}
                     {% endfor %}
                 {% endif %}
             </td>
             <td>
-                {% for card in user.print_killed() %}
-                   {{ card }},
+                {% for card in player.print_killed() %}
+                   {{ card }} {% if not loop.last %}, {% endif %}
                 {% endfor %}
             </td>
         </tr>
@@ -52,6 +52,12 @@
 
 {% elif game.action.status == 1 %}
     {% include 'challenge_action.html' %}
+
+{% elif game.action.status == 2 %}
+    {% include 'block.html' %}
+
+{% elif game.action.status == 3 %}
+    {% include 'challenge_block.html' %}
 
 {% elif game.action.status == 4 %}
     {% include 'lose_life.html' %}

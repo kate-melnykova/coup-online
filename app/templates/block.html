@@ -1,10 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+<p>
+    {% if game.action.action[0] == 2 %}
+        {% if (user.name not in self.block[1]) and (user.name in game.get_alive_players()) %}
+            % user wants to take foreign aid
+            <p> Do you want to block foreign aid by claiming that you are the Duke?</p>
+            <p>
+                <form method="POST">
+                    <input type="submit" name="block" value="yes">
+                     or
+                    <input type="submit" name="block" value="no">
+                </form>
+            </p>
+        {% endif %}
+        <p> Waiting for replies from:</p>
+        <p>
+            {% for player in game.get_alive_players() %}
+                {% if player.name not in self.block[1] %}
+                    {{ player.name }},
+                {% endif %}
+            {% endfor %}
 
-</body>
-</html>
+        </p>
+    {% elif game.action.action[0] == 5 %}
+        {% if user.name == game.action.action[2] %}
+            <p> Do you want to block the action by claiming that you are a Contessa?</p>
+            <p>
+                <form method="POST">
+                    <input type="submit" name="block" value="yes">
+                     or
+                    <input type="submit" name="block" value="no">
+                </form>
+            </p>
+        {% endif %}
+    {% else %}
+        {% if user.name == game.action.action[2] %}
+            <p> Do you want to block the stealing by claiming that you are </p>
+            <p>
+                <form method="POST">
+                    <input type="submit" name="block" value="Captain">
+                     or
+                    <input type="submit" name="block" value="Ambassador">
+                    or
+                    <input type="submit" name="block" value="no">
+                </form>
+            </p>
+        {% endif %}
+    {% endif %}
+</div>

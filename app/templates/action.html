@@ -32,8 +32,7 @@
                         I am an Assassin and I assassinate
                         {% for player in game.all_users %}
                             {% if ((player.name != user.name) and (player.is_alive)) %}
-                                {% set submit_name = 'assassinate ' + player.name %}
-                                <input type="submit" name="assassinate" value={{submit_name}}>
+                                <input type="submit" name="assassinate" value={{player.name}}>
                             {% endif %}
                         {% endfor %}
                     </p>

@@ -4,9 +4,11 @@
             <p>  <input type="submit" name="OK_action" value="OK"></p>
         </form>
     {% endif %}
-    <p> Notified users:
-        {% for name in game.action.notified %}
-            {{name}} {% if not loop.last %}, {% endif %}
+    <p> Waiting for notification from
+        {% for name in game.get_alive_players() %}
+            {% if name not in game.action.notified %}
+                {{name}} {% if not loop.last %}, {% endif %}
+            {% endif %}
         {% endfor %}
     </p>
 </div>
