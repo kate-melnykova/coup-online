@@ -1,1 +1,41 @@
-% select new cards
+{% if game.action.action[1] == user.name %}
+    <div>
+    <form method="POST">
+        <p> Select exactly <span id="n_cards">{{user.playing_cards|length}}</span> card(s). </p>
+        <p>
+            {% for card in game.action.ambassador_cards %}
+                <input type="checkbox" name="card" value={{card}} onclick="return ValidateCardSelection();">
+                {{game.deck.mapping[card]}}
+                <br>
+            {% endfor %}
+        </p>
+                <p><input type="submit" value="select"></p>
+    </form>
+    </div>
+{% else %}
+    <div>
+    <p> Waiting for {{ game.cur_player }} to choose their new cards. </p>
+    </div>
+{% endif %}
+
+
+<script type="text/javascript">
+function ValidateCardSelection(){
+    var n_cards = document.getElementById("id");
+    if (n_cards != null){
+        n_cards = parseInt(checkboxes);
+        var checkboxes = document.getElementByName("card")
+        var numberOfCheckedItems = 0;
+        for(var i = 0; i < checkboxes.length; i++)
+        {
+            if(checkboxes[i].checked)
+                numberOfCheckedItems++;
+        }
+        if (numberOfCheckedItems > n_cards)
+        {
+            alert("You selected incorrect number of cards!");
+            return false;
+        }
+    }
+}
+</script>

@@ -1,7 +1,6 @@
 <p>
     {% if game.action.action[0] == 2 %}
-        {% if (user.name not in self.block[1]) and (user.name in game.get_alive_players()) %}
-            % user wants to take foreign aid
+        {% if (user.name not in game.action.block[1]) and (user.name in game.get_alive_players()) %}
             <p> Do you want to block foreign aid by claiming that you are the Duke?</p>
             <p>
                 <form method="POST">
@@ -14,7 +13,7 @@
         <p> Waiting for replies from:</p>
         <p>
             {% for player in game.get_alive_players() %}
-                {% if player.name not in self.block[1] %}
+                {% if player.name not in game.action.block[1] %}
                     {{ player.name }},
                 {% endif %}
             {% endfor %}

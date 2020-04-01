@@ -1,5 +1,9 @@
 {% extends 'base.html' %}
 
+{% block jsfile %}
+<script src="{{url_for('static', filename='play_coup.js')}}"></script>
+{% endblock %}
+
 {% block content %}
 <div> You are playing under name {{user.name }}</div>
 <div>
@@ -64,6 +68,9 @@
 
 {% elif game.action.status == 6 %}
     {% include 'notify.html' %}
+
+{% elif game.action.status == 7 %}
+    {% include 'ambassador.html' %}
 
 {% endif %}
 {% endblock %}

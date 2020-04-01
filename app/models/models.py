@@ -58,7 +58,8 @@ class User:
     lives = property(lambda self: len(self.playing_cards))
 
     def __init__(self, name, money, playing_cards, killed):
-        assert len(playing_cards) + len(killed) == 2, f'User {name} has not two cards'
+        print(f'User {name} has cards: {playing_cards} and killed {killed}')
+        assert len(playing_cards) + len(killed) == 2, f'User {name} has not two cards: {playing_cards} and killed {killed}'
         assert money >= 0, f'User {name} has negative amount of money'
         self.name = name
         self.money = money
@@ -175,13 +176,16 @@ class Action:
         else:
             return action_to_str[self.action]
 
-    def __init__(self, status=0, message='',
+    def __init__(self,
                  action=[-1, '', ''],
                  challenge_action=[0, list(), ''],
-                 block = [0, list(), '', -1],
-                 challenge_block = [0, list(), ''],
-                 lose_life = ['', '', 6],
-                 notified=list()):
+                 block=[0, list(), '', -1],
+                 challenge_block=[0, list(), ''],
+                 lose_life=['', '', 6],
+                 ambassador_cards=[],
+                 status=0,
+                 notified=list(),
+                 message=''):
         self.action = action
         # first index: action encoding, see action_to_word
         # second index: player name who made action
@@ -208,6 +212,8 @@ class Action:
         # second index: which card
         # third index: action status after losing action
 
+        self.ambassador_cards = ambassador_cards
+
         self.status = status  # integer, encoding is stored in status_to_word
         self.notified = notified  # list of all players' names who were notified of how the turn ended
         self.message = message  # is displayed to all players
@@ -217,7 +223,8 @@ class Action:
         for attribute in ['action', 'challenge_action',
                           'block', 'challenge_block',
                           'lose_life', 'notified',
-                          'status', 'message']:
+                          'status', 'message',
+                          'ambassador_cards']:
             d[attribute] = getattr(self, attribute)
         return json.dumps(d)
 
@@ -245,7 +252,7 @@ class Action:
 
         self.action = [encoded, game.cur_player, target]  # TODO: assert target is a valid player name
         self.challenge_action[1].append(game.cur_player)  # cur_player approves their action
-        self.block[1].append(game.cur_player)  # cur_player approves their action
+        self.block[1] = [game.cur_player, ]  # cur_player approves their action
         user = game.get_user(game.cur_player)
         if value == 'coup':
             # cannot be blocked or challenged
@@ -318,6 +325,7 @@ class Action:
                 # TODO replace card
                 self.status = 4
                 self.lose_life = [game.cur_player, '', 6]
+            game.save()
         else:
             if by not in self.challenge_action[1]:
                 self.challenge_action[1].append(by)
@@ -333,8 +341,13 @@ class Action:
                 elif action_word == 'taxes':
                     self.status = 5
                 else:
-                    self.message += f'{game.cur_player} selects new playing cards.\n'
+                    user = game.get_user(game.cur_player)
+                    self.message += f'{game.cur_player} will select new playing cards.\n'
                     self.status = 7
+                    self.ambassador_cards = list(user.playing_cards)
+                    self.ambassador_cards.append(game.deck.draw())
+                    self.ambassador_cards.append(game.deck.draw())
+                    print(f'{game.cur_player} has {len(user.playing_cards)} cards')
             game.save()
             return True
 
@@ -360,15 +373,21 @@ class Action:
 
             if len(self.block[1]) == len(game.get_alive_players()):
                 self.message += f'''Action is not blocked.\n'''
-                action_word = self.action_to_word[self.action[0]]
-                if action_word == 'assassinate':
-                    self.status = 4
-                    self.lose_life = [self.action[2], '', 6]
-                elif action_word == 'ambassador':
-                    self.status = 7
-                else:
-                    self.status = 5
-            game.save()
+        else:
+            action_word = self.action_to_word[self.action[0]]
+            if action_word == 'assassinate':
+                self.status = 4
+                self.lose_life = [self.action[2], '', 6]
+            elif action_word == 'ambassador':
+                print(f'We are in wrong section: Doing ambassador at do_block')
+                self.status = 7
+                user = game.get_user(game.cur_player)
+                self.action.ambassador_cards = list(user.playing_cards)
+                self.action.ambassador_cards.append(game.deck.draw())
+                self.action.ambassador_cards.append(game.deck.draw())
+            else:
+                self.status = 5
+        game.save()
 
     def do_challenge_block(self, game: 'Game', reply: bool, by: str) -> bool:
         """
@@ -423,7 +442,6 @@ class Action:
         self.status = self.lose_life[2]
         self.message += f'''{name} loses the influence {game.deck.mapping[type_]}.\n'''
 
-
     def do_perform_action(self, game: 'Game') -> bool:
         if self.status != 5:
             return False
@@ -462,8 +480,12 @@ class Action:
             game.lose_life[2] = 6  # move is completed
             self.notified = [self.action[2], game.cur_player, ]
         elif action == 'ambassador':
-            self.message += f'{game.cur_user} exchanges cards. Waiting for his/her decision.\n'
+            self.message += f'{game.cur_player} exchanges cards. Waiting for his/her decision.\n'
             self.status = 7
+            print(f'We are doing ambassador in do_perform_action')
+            self.ambassador_cards = list(user.playing_cards)
+            self.ambassador_cards.append(game.deck.draw())
+            self.ambassador_cards.append(game.deck.draw())
         game.save()
 
     def do_notify(self, game: 'Game', name: str) -> bool:
@@ -506,6 +528,8 @@ class Game:
         return instance
 
     def save(self) -> None:
+        if self.turn_id >= 0:
+            self.turn_id += 1
         d = {
             'id': self.id,
             'n_players': self.n_players,

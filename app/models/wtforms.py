@@ -1,7 +1,7 @@
 from typing import List
 
 from wtforms import Form
-from wtforms import StringField
+from wtforms import StringField, SelectMultipleField
 from wtforms import Field, PasswordField, BooleanField, DateField, TextAreaField
 from wtforms.validators import ValidationError
 from wtforms.fields.html5 import EmailField
@@ -23,6 +23,4 @@ class CreateOrJoinGameForm(Form):
                                 ])
     n_players = StringField('Enter the number of players (including you)')
     game_id = StringField('Game id (provided by the dealer)')
-
-
 

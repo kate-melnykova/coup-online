@@ -152,6 +152,16 @@ def play_coup():
     elif game.action.status == 5:
         game.action.do_perform_action(game)
 
+    elif game.action.status == 7:
+        selected_cards = [int(c) for c in request.form.getlist('card')]
+        discarded = game.action.ambassador_cards[:2 + len(user.playing_cards)]
+        for c in selected_cards:
+            discarded.remove(c)
+        user.playing_cards = selected_cards
+        for c in discarded:
+            game.deck.add_card(c)
+        game.action.status = 6
+
     if game.action.status == 6:
         # user name was notified about action
         if name not in game.action.notified:
@@ -163,9 +173,6 @@ def play_coup():
             if not is_continued:
                 game.save()
                 return redirect(url_for('winning'))
-
-    if game.action.status == 7:
-        ...
 
     game.save()
     return render_template('play_coup.html', game=game, user=user)
