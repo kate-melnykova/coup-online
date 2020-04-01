@@ -50,7 +50,8 @@
     </table>
 </div>
 <p></p>
-<p> {{ game.action.message }} </p>
+<p style="white-space: pre-line;"> {{ game.action.message }} </p>
+
 {% if game.action.status == 0 %}
     {% include 'action.html' %}
 

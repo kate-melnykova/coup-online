@@ -1,3 +1,5 @@
+import time
+
 from flask import Flask, render_template, redirect, request, flash, url_for, \
     make_response, jsonify
 
@@ -5,6 +7,8 @@ from models.models import Game
 from models.wtforms import CreateOrJoinGameForm
 
 app = Flask(__name__)
+
+events = dict()
 
 
 @app.route('/')
@@ -32,11 +36,15 @@ def create_or_join():
             flash('Game with this code does not exist')
             return redirect(url_for('main'))
 
-    game.add_player(form.name.data)
-    r = make_response(redirect(url_for('waiting')))
-    r.set_cookie('COUP_name', form.name.data)
-    r.set_cookie('COUP_game_id', game.id)
-    return r
+    if form.name.data not in game.all_users:
+        game.add_player(form.name.data)
+        r = make_response(redirect(url_for('waiting')))
+        r.set_cookie('COUP_name', form.name.data)
+        r.set_cookie('COUP_game_id', game.id)
+        return r
+    else:
+        flash('This name is taken by your teammate. Please select another one.')
+        return redirect(url_for('main.html'))
 
 
 @app.route('/waiting', methods=['GET', 'POST'])
@@ -175,6 +183,12 @@ def play_coup():
                 return redirect(url_for('winning'))
 
     game.save()
+    for user_ in game.all_users:
+        events[f'{game_id}:{user_.name}'] = {'type': 'reload',
+                                             'data': {
+                                                 'url': url_for('play_coup'),
+                                             }
+                                             }
     return render_template('play_coup.html', game=game, user=user)
 
 
@@ -191,7 +205,28 @@ def winning():
     return render_template('winning.html', game=game, user=user)
 
 
+@app.route('/long_polling')
+def long_polling():
+    game_id = request.cookies.get('COUP_game_id')
+    game = Game.load(game_id)
+    if game is None:
+        return redirect(url_for('main'))
 
+    name = request.cookies.get('COUP_name')
+    event_target = f'{game_id}:{name}'
+
+    while True:
+        event = get_event(event_target)
+        if event:
+            return jsonify(event)
+        time.sleep(1)
+
+
+def get_event(event_target):
+    try:
+        return events.pop(event_target)
+    except KeyError:
+        return None
 
 
 

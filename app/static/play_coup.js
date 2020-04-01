@@ -1,5 +1,10 @@
 $(document).ready(function(){
+    loadState();
 });
+
+window.reload = function(data){
+    window.location.href = data.url;
+}
 
 function verifyAmbassador(){
 {
@@ -27,6 +32,15 @@ function verifyAmbassador(){
 
 function loadState() {
     window.setTimeout(function(){
-        location.reload()
+        $.ajax({
+            url: '/long_polling',
+            method: 'GET',
+            dataType: 'json',
+            success: function(event){
+                window[event.type](event.data);
+                loadState();
+            }
+        });
     }, 2000);
 }
+
