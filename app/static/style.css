@@ -1,8 +1,37 @@
 .borderstyle {
- border-style:solid;
+ border-style: solid;
  border-color:#287EC7;
+
 }
 
-table, th, td {
-  border: 1px solid black;
+.topnav {
+    width: 100%;
+    border: 0px;
+    background-color: #38b6ff;
+}
+
+table{
+  border: 0px;
+  background-color: #cce6ff;
+}
+
+tr, td{
+ text-align: center;
+ }
+
+
+a:link { color: white;}
+a:visited { color: white;}
+a:hover { color:#cce6ff;}
+a:active { color:#e6f2ff;}
+
+div {
+ border-style: solid;
+ background-color: #cce6ff;
+}
+
+body {
+  background-color: #e6f2ff;
+  margin-left: 100px;
+  margin-right: 100px;
 }

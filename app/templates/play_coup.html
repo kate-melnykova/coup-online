@@ -5,11 +5,14 @@
 {% endblock %}
 
 {% block content %}
-<div> You are playing under name {{user.name }}</div>
 <div>
-    <table>
+    <p>You are playing under name {{user.name }}
+    </p>
+</div>
+<div>
+    <table width="80%" align="center">
         <tr>
-            <th> Current player </th>
+            <th> </th>
             <th> Name </th>
             <th> Coins </th>
             <th> Influence</th>
@@ -17,32 +20,32 @@
         </tr>
         {% for player in game.all_users %}
         <tr>
-            <td>{% if player.name == game.cur_player %} plays
+            <td>{% if player.name == game.cur_player %} &#8883;
                 {% elif not player.is_alive %}
-                killed
+                &#10013;
                 {% endif %}</td>
             <td>
                 {% if player.name == user.name %}
                     you
                 {% else %}
-                    <span> {{ player.name }}</span>
+                {{ player.name }}
                 {% endif %}
             </td>
-            <td> {{player.money}}  </td>
+            <td align="center;"> {{player.money}}  </td>
             <td>
                 {% if player.name == user.name %}
                     {% for card in player.print_playing_cards() %}
-                        {{ card }} {% if not loop.last %}, {% endif %}
+                        {{ card }}
                     {% endfor %}
                 {% else %}
                     {% for card in player.print_playing_cards() %}
-                        unknown {% if not loop.last %}, {% endif %}
+                        unknown
                     {% endfor %}
                 {% endif %}
             </td>
             <td>
                 {% for card in player.print_killed() %}
-                   {{ card }} {% if not loop.last %}, {% endif %}
+                   {{ card }}
                 {% endfor %}
             </td>
         </tr>

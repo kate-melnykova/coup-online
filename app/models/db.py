@@ -49,6 +49,7 @@ class DB:
         :param value: the value to be stored under the given key in db
         """
         self.redis.set(key, value)
+        self.redis.expire(key, 604800)  # expires in one week
 
     def delete(self, key: str) -> None:
         """

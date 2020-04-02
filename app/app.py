@@ -28,7 +28,7 @@ def create_or_join():
             flash('Please indicate number of players')
             return redirect(url_for('main'))
 
-        game = Game.create(n_players) # TODO: specify card types
+        game = Game.create(n_players)  # TODO: specify card types
     else:
         code = form.game_id.data
         game = Game.load(code)
@@ -102,6 +102,7 @@ def play_coup():
 
         if len(game.get_alive_players()) == 1:
             return redirect(url_for('winning'))
+
         return render_template('play_coup.html', game=game, user=user)
 
     # method is POST
@@ -170,7 +171,7 @@ def play_coup():
             game.deck.add_card(c)
         game.action.status = 6
 
-    if game.action.status == 6:
+    elif game.action.status == 6:
         # user name was notified about action
         if name not in game.action.notified:
             game.action.notified.append(name)
@@ -227,6 +228,11 @@ def get_event(event_target):
         return events.pop(event_target)
     except KeyError:
         return None
+
+
+@app.route('/logo')
+def logo():
+    return
 
 
 
