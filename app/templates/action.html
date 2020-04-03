@@ -11,21 +11,27 @@
             {% endfor %}
         {% else %}
             {% if user.money > 6 %}
+                <p> I coup
                 {% for player in game.all_users %}
                     {% if ((player.name != user.name) and (player.is_alive)) %}
-                        <p> I coup <input type="submit" name="coup" value={{player.name}}></p>
+                        <input type="submit" name="coup" value={{player.name}}>
                     {% endif %}
                 {% endfor %}
+                    (target loses one influence. Action costs 7 coins)
+                </p>
+            {% else %}
+            <p style="color:grey;"> Coup costs 7 coins. The target would lost one influence.</p>
             {% endif %}
-                <p> I take <input type="submit" name="submit" value="income">  </p>
-                <p> I take <input type="submit" name="submit" value="foreign aid">  </p>
-                <p> I am a Duke and I take <input type="submit" name="submit" value="taxes"> </p>
+                <p> I take <input type="submit" name="submit" value="income"> (+1 coin) </p>
+                <p> I take <input type="submit" name="submit" value="foreign aid"> (+2 coins, may be blocked by Duke) </p>
+                <p> I am a Duke and I take <input type="submit" name="submit" value="taxes"> (+3 coins, may be challenged) </p>
                 <p> I am a Captain and I steal from
                     {% for player in game.all_users %}
                         {% if ((player.name != user.name) and (player.is_alive)) and (player.money > 1) %}
                             <input type="submit" name="steal" value={{player.name}}>
                         {% endif %}
                     {% endfor %}
+                    (steal 2 coins, may be challenged, may be blocked if target has Captain or Assassin)
                 </p>
                 {% if user.money > 2 %}
                     <p>
@@ -35,9 +41,12 @@
                                 <input type="submit" name="assassinate" value={{player.name}}>
                             {% endif %}
                         {% endfor %}
+                        (costs 3 coins, target loses one influence, may be challenged, may be blocked by Contessa)
                     </p>
+                {% else %}
+                    <p style="color:grey"> Assassination requires 3 coins. May be challenged, may be blocked by Contessa.</p>
                 {% endif %}
-                <p> I am <input type="submit" name="submit" value="ambassador"></p>
+                <p> I am <input type="submit" name="submit" value="ambassador"> (exchange two cards with the deck, may be challenged)</p>
             {% endif %}
         </form>
     </fieldset>

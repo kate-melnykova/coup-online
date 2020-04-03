@@ -1,18 +1,23 @@
 {% extends 'base.html' %}
 
 {% block content %}
-Welcome to the coup online! No login or registration required.
-<fieldset>
+<div>
+    <h1 align="center">Welcome to the coup online!</h1>
+    <p></p>
+    <p>No login or registration required, just let us know the size of your party.</p>
+    <p></p>
+    <span align="center">
     <form action="./create_or_join" method="POST">
+    <fieldset>
         {{ form.csrf }}
-        <table>
+        <table align="center">
             <tr>
-                <td>{{form.name.label}}</td>
-                <td>{{ form.name(class="css_class") }}</td>
+                <td style="text-align:right;">{{form.name.label}}</td>
+                <td style="text-align:left;">{{ form.name(class="css_class") }}</td>
             </tr>
             <tr>
-                <td>{{form.n_players.label}}</td>
-                <td>
+                <td style="text-align:right;">{{form.n_players.label}}</td>
+                <td style="text-align:left;">
                     {{ form.n_players(class="css_class") }}
                     <input type="submit" name="start" value="create" /></p>
                 </td>
@@ -21,15 +26,17 @@ Welcome to the coup online! No login or registration required.
                 <td colspan="2"> or </td>
             </tr>
             <tr>
-                <td>{{form.game_id.label}}</td>
-                <td>
+                <td style="text-align:right;">{{form.game_id.label}}</td>
+                <td style="text-align:left;">
                     {{ form.game_id(class="css_class") }}
                     <input type="submit" name="start" value="join" /></p>
                 </td>
             </tr>
         </table>
-    </p>
+    </fieldset>
     </form>
-</fieldset>
+    </span>
+    <p> *required, you will be referred by that name</p>
 By continuing, you accept use of cookies.
+</div>
 {% endblock %}

@@ -13,9 +13,9 @@
         </tr>
         {% for player in game.all_users %}
         <tr>
-            <td>{% if player.name == game.cur_player %} plays
+            <td>{% if player.name == game.cur_player %} &#8883;
                 {% elif not player.is_alive %}
-                killed
+                &#10013;
                 {% endif %}</td>
             <td>
                 {% if player.name == user.name %}
@@ -41,6 +41,6 @@
 </div>
 <div>
     <p> The game is over! {{game.get_alive_players()[0]}} wins.</p>
-    <p> <a href="/">Start a new game?</a> </p>
+    <p> <a href="/" style="color:black;">Start a new game?</a> </p>
 </div>
 {% endblock %}

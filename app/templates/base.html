@@ -10,6 +10,21 @@
     {% endblock %}
 </head>
 <body>
+<div>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div style="background-color: beige;">
+        <ul class=flashes>
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+        </ul>
+        </div>
+    {% endif %}
+    {% endwith %}
+    {% block form %}
+    {% endblock %}
+</div>
 <div class="topnav">
     <table class="topnav">
         <tr>
@@ -19,7 +34,7 @@
         <tr style="background-color: black; text-color: white;">
             <td style="width: 70%"></td>
             <td style="width: 15%"><a href="/"> Main page </a></td>
-            <td style="width: 15%"><a href="/"> To be added </a></td>
+            <td style="width: 15%"><a href="/about"> About </a></td>
         </tr>
     </table>
 </div>

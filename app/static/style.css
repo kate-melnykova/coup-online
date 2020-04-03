@@ -13,11 +13,18 @@
 table{
   border: 0px;
   background-color: #cce6ff;
+  border-spacing: 0px;
 }
 
 tr, td{
  text-align: center;
  }
+
+fieldset{
+  margin-left: 2px;
+  margin-right: 2px;
+  display: inline-block;
+}
 
 
 a:link { color: white;}
@@ -28,10 +35,14 @@ a:active { color:#e6f2ff;}
 div {
  border-style: solid;
  background-color: #cce6ff;
+ border-color: grey;
+ align:center;
 }
 
 body {
   background-color: #e6f2ff;
-  margin-left: 100px;
-  margin-right: 100px;
+  margin-left: 10%;
+  margin-right: 10%;
 }
+
+

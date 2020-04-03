@@ -7,6 +7,7 @@ from models.models import Game
 from models.wtforms import CreateOrJoinGameForm
 
 app = Flask(__name__)
+app.secret_key = '9d31d60f-7e3c-46b8-aef8-8d409ad272ec'
 
 events = dict()
 
@@ -36,15 +37,16 @@ def create_or_join():
             flash('Game with this code does not exist')
             return redirect(url_for('main'))
 
-    if form.name.data not in game.all_users:
-        game.add_player(form.name.data)
+    name = form.name.data
+    if game.get_user(name) is None:
+        game.add_player(name)
         r = make_response(redirect(url_for('waiting')))
-        r.set_cookie('COUP_name', form.name.data)
+        r.set_cookie('COUP_name', name)
         r.set_cookie('COUP_game_id', game.id)
         return r
     else:
         flash('This name is taken by your teammate. Please select another one.')
-        return redirect(url_for('main.html'))
+        return redirect(url_for('main'))
 
 
 @app.route('/waiting', methods=['GET', 'POST'])
@@ -230,9 +232,9 @@ def get_event(event_target):
         return None
 
 
-@app.route('/logo')
-def logo():
-    return
+@app.route('/about')
+def about():
+    return render_template('about.html')
 
 
 
