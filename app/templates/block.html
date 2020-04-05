@@ -13,8 +13,8 @@
         <p> Waiting for replies from:</p>
         <p>
             {% for player in game.get_alive_players() %}
-                {% if player.name not in game.action.block[1] %}
-                    {{ player.name }},
+                {% if player not in game.action.block[1] %}
+                    {{ player }},
                 {% endif %}
             {% endfor %}
 

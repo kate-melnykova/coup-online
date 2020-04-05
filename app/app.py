@@ -109,7 +109,10 @@ def play_coup():
 
     # method is POST
     # action/challenge/blocking/whatever was submitted
-    print(f'Game status {game.action.status}')
+    print(f'Game status = {game.action.status}')
+    if not request.form:
+        return render_template('play_coup.html', game=game, user=user)
+
     if game.action.status == 0:
         coup = request.form.get('coup', '')
         steal = request.form.get('steal', '')
@@ -132,6 +135,9 @@ def play_coup():
         game.action.do_challenge_action(game, name, is_challenged)
 
     elif game.action.status == 2:
+        if 'block' not in request.form:
+            return render_template('play_coup.html')
+
         value = request.form['block']
         if value == 'no':
             game.action.do_block(game, False, name)
@@ -156,15 +162,20 @@ def play_coup():
         if game.action.lose_life[0] == name:
             card_name = request.form['to_kill']
             card_type = game.deck.reverse_mapping(card_name)
-            user.lose_life(card_type)
+            #user.lose_life(card_type)
             # life can be lost either via assassination
-            game.action.status = game.action.lose_life[2]
+            #game.action.status = game.action.lose_life[2]
+            game.action.do_lose_life(game, card_type)
 
     elif game.action.status == 5:
         game.action.do_perform_action(game)
 
     elif game.action.status == 7:
         selected_cards = [int(c) for c in request.form.getlist('card')]
+        if len(selected_cards) != len(user.playing_cards):
+            flash('Please select right amount of cards!')
+            return render_template('play_coup.html', game=game, user=user)
+
         discarded = game.action.ambassador_cards[:2 + len(user.playing_cards)]
         for c in selected_cards:
             discarded.remove(c)
@@ -178,7 +189,7 @@ def play_coup():
         if name not in game.action.notified:
             game.action.notified.append(name)
 
-        if len(game.action.notified) >= len(game.get_alive_players()):
+        if len(game.action.notified) == len(game.get_alive_players()):
             game.action.completed = 1
             is_continued = game.next_move()
             if not is_continued:

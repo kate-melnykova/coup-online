@@ -309,23 +309,73 @@ class Action:
             encoded_card = Deck.reverse_mapping(card)
             user = game.get_user(game.cur_player)
             if encoded_card in user.playing_cards:
-                self.message += f'''Challenge found that {game.cur_player} has the {card}.\n'''
+                self.message += f'''Challenge revealed that {game.cur_player} has the {card} card.\n'''
                 self.message += f'{ by } loses a life and {game.cur_player} gets a new card.\n'
                 user.replace_card(encoded_card, game.deck)
-                self.status = 4
                 # determine what happens after losing life
-                blockable_actions = [self.action_to_int(a) for a in ['steal', 'assassinate']]
-                if self.action[0] in blockable_actions:
-                    self.lose_life = [by, '', 2]
+                user_by = game.get_user(by)
+                action_word = self.action_to_word[self.action[0]]
+                if len(user_by.playing_cards) == 1:
+                    self.message += f'{by} loses their last influence.\n'
+                    card = user_by.playing_cards.pop()
+                    user_by.killed.append(card)
+                    if action_word in ['taxes', 'foreign aid']:
+                        self.status = 5
+                    elif action_word == 'ambassador':
+                        while self.ambassador_cards:
+                            card = self.ambassador_cards.pop()
+                            game.deck.add_card(card)
+                        self.ambassador_cards = list(user.playing_cards)
+                        self.ambassador_cards.append(game.deck.draw())
+                        self.ambassador_cards.append(game.deck.draw())
+                        self.status = 7
+                    elif action_word == 'assassinate':
+                        if self.action[2] == by:
+                            self.status = 6
+                        else:
+                            self.status = 2
+                    elif action_word == 'steal':
+                        self.status = 2
+                    else:
+                        print(f'Error! Action_word={action_word}')
+                    """
+                    if self.action[2] and not game.get_user(self.action[2]).playing_cards:
+                        # the action has target who is dead
+                        if action_word in ['taxes', 'steal']:
+                            self.status = 5
+                        elif action_word == 'ambassador':
+                            self.status = 7
+                            self.ambassador_cards = list(user.playing_cards)
+                            self.ambassador_cards.append(game.deck.draw())
+                            self.ambassador_cards.append(game.deck.draw())
+                            print(f'Drawing ambassador_cards: {self.ambassador_cards}')
+                        elif action_word == 'assassinate':
+                            self.status = 6
+                        else:
+                            print(f'action_word={action_word}')
+                    """
                 else:
-                    self.lose_life = [by, '', 5]
+                    # if there is a target, they remains alive
+                    self.status = 4
+                    if action_word == 'taxes':
+                        self.lose_life = [by, '', 5]
+                    elif action_word == 'ambassador':
+                        self.lose_life = [by, '', 7]
+                    else:
+                        self.lose_life = [by, '', 2]
             else:
-                self.message += f'''Challenge found that {game.cur_player} does not have the {card}.\n'''
-                self.message += f'{game.cur_player} loses a life.\n'
-                # TODO replace card
-                self.status = 4
-                self.lose_life = [game.cur_player, '', 6]
+                self.message += f'''Challenge revealed that {game.cur_player} does not have the {card} card.\n'''
+                if len(user.playing_cards) == 2:
+                    self.message += f'{game.cur_player} loses an influence. The action is denied.\n'
+                    self.status = 4
+                    self.lose_life = [game.cur_player, '', 6]
+                else:
+                    self.message += f'{game.cur_player} loses all their influence. The action is denied.\n'
+                    card = user.playing_cards.pop()
+                    user.killed.append(card)
+                    self.status = 6
             game.save()
+            return True
         else:
             if by not in self.challenge_action[1]:
                 self.challenge_action[1].append(by)
@@ -377,15 +427,13 @@ class Action:
             action_word = self.action_to_word[self.action[0]]
             if action_word == 'assassinate':
                 self.status = 4
-                self.lose_life = [self.action[2], '', 6]
-            elif action_word == 'ambassador':
-                print(f'We are in wrong section: Doing ambassador at do_block')
-                self.status = 7
+                self.message += f'Assassination is being executed.'
                 user = game.get_user(game.cur_player)
-                self.action.ambassador_cards = list(user.playing_cards)
-                self.action.ambassador_cards.append(game.deck.draw())
-                self.action.ambassador_cards.append(game.deck.draw())
+                user.money -= 3
+                self.lose_life = [self.action[2], '', 6]
             else:
+                # stealing
+                self.message += f'Stealing is occuring.'
                 self.status = 5
         game.save()
 
@@ -406,41 +454,51 @@ class Action:
             challenger_user = game.get_user(by)
             self.message += f'''{by} challenged that {blocking_name} has {blocking_card_name}.\n'''
             if blocking_card in blocking_user.playing_cards:
-                self.message += f'''The challenge found that {blocking_name} has {blocking_card_name}.\n'''
+                self.message += f'''The challenge revealed that {blocking_name} has the {blocking_card_name} card.\n'''
                 self.message += f'''{by} loses a life and {blocking_name} gets a new card.\n'''
                 self.message += f'''The original move is blocked. Waiting for {by} to discard a card.\n'''
                 blocking_user.replace_card(blocking_card, game.deck)
                 self.status = 4
                 self.lose_life = [by, '', 6]
             elif self.action_to_word[self.action[0]] == 'assassinate':
-                self.message += f'''The challenge found that {blocking_name} does NOT have {blocking_card_name}.\n'''
+                self.message += f'''The challenge revealed that {blocking_name} does NOT have the Contessa card.\n'''
                 self.message += f'''{blocking_name} loses all their influence.'''
+                user = game.get_user(game.cur_player)
+                user.money -= 3
                 blocking_user.killed += blocking_user.playing_cards
                 blocking_user.playing_cards = []
                 self.status = 6
             else:
                 # stealing and taxes are currently the only options
-                self.message += f'''The challenge found that {blocking_name} does NOT have {blocking_card_name}.\n'''
+                self.message += f'''The challenge revealed that {blocking_name} does NOT have {blocking_card_name} card.\n'''
                 self.message += f'''The original action goes through. {blocking_name} loses one of their influence.\n'''
                 self.message += f'''Waiting for {blocking_name} decision.\n'''
                 self.lose_life = [blocking_name, '', 5]
-        elif self.action_to_word[self.action[0]] == 'ambassador':
+                self.status = 4
+            return True
+        else:
             if by not in self.challenge_block[1]:
                 self.challenge_block[1].append(by)
 
             if len(self.challenge_block[1]) == len(game.get_alive_players()):
                 self.message += f'''The block is not challenged. The original action is blocked.\n'''
                 return game.next_move()
-        else:
-            self.message += f'''The block is not challenged. The original action is blocked.\n'''
-            return game.next_move()
+            return True
 
     def do_lose_life(self, game: 'Game', type_: int):
         name = self.lose_life[0]
         user = game.get_user(name)
-        user.lose_life(type_, game.deck)
+        user.lose_life(type_)
+        game.deck.add_card(type_)
+
         self.status = self.lose_life[2]
+        if self.status == 7:
+            user = game.get_user(game.cur_player)
+            self.ambassador_cards = list(user.playing_cards)
+            self.ambassador_cards.append(game.deck.draw())
+            self.ambassador_cards.append(game.deck.draw())
         self.message += f'''{name} loses the influence {game.deck.mapping[type_]}.\n'''
+        game.save()
 
     def do_perform_action(self, game: 'Game') -> bool:
         if self.status != 5:
@@ -478,7 +536,6 @@ class Action:
             self.status = 4
             game.lose_life[0] = self.action[2]  # who loses life
             game.lose_life[2] = 6  # move is completed
-            self.notified = [self.action[2], game.cur_player, ]
         elif action == 'ambassador':
             self.message += f'{game.cur_player} exchanges cards. Waiting for his/her decision.\n'
             self.status = 7

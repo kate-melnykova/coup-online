@@ -1,5 +1,5 @@
 <div>
-    {% if user.name != game.cur_player %}
+    {% if ((user.name in game.get_alive_players()) and (user.name not in game.action.challenge_action[1])) %}
         <p>Do you want to challenge?</p>
         <p>
             <form method="POST">
