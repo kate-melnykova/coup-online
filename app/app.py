@@ -29,6 +29,10 @@ def create_or_join():
             flash('Please indicate number of players')
             return redirect(url_for('main'))
 
+        if n_players > 20:
+            flash('Too many players -- are you entering game id?')
+            return redirect(url_for('main'))
+
         game = Game.create(n_players)  # TODO: specify card types
     else:
         code = form.game_id.data
@@ -130,13 +134,16 @@ def play_coup():
             game.action.do_action(game, other)
 
     elif game.action.status == 1:
+        if 'challenge' not in request.form:
+            return render_template('play_coup.html', game=game, user=user)
+
         is_challenged = request.form['challenge']
         is_challenged = True if is_challenged == 'yes' else False
         game.action.do_challenge_action(game, name, is_challenged)
 
     elif game.action.status == 2:
         if 'block' not in request.form:
-            return render_template('play_coup.html')
+            return render_template('play_coup.html', game=game, user=user)
 
         value = request.form['block']
         if value == 'no':
@@ -153,11 +160,15 @@ def play_coup():
             game.action.do_block(game, True, name, card)
 
     elif game.action.status == 3:
+        if 'submit' not in request.form:
+            return render_template('play_coup.html', game=game, user=user)
         reply = request.form['submit']
         reply = True if reply == 'yes' else False
         game.action.do_challenge_block(game, reply, name)
 
     elif game.action.status == 4:
+        if 'to_kill' not in request.form:
+            return render_template('play_coup.html', game=game, user=user)
         # TODO move it under the Action class as a function and call it
         if game.action.lose_life[0] == name:
             card_name = request.form['to_kill']

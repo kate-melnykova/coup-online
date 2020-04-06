@@ -293,9 +293,6 @@ class Action:
         return True
 
     def do_challenge_action(self, game: 'Game', by: str, reply: bool) -> bool:
-        if self.status != 1:
-            return False
-
         if reply:
             self.challenge_action = [1, self.challenge_action[1], by]
             self.message += f'''Action was challenged by {by}.\n'''
@@ -338,22 +335,6 @@ class Action:
                         self.status = 2
                     else:
                         print(f'Error! Action_word={action_word}')
-                    """
-                    if self.action[2] and not game.get_user(self.action[2]).playing_cards:
-                        # the action has target who is dead
-                        if action_word in ['taxes', 'steal']:
-                            self.status = 5
-                        elif action_word == 'ambassador':
-                            self.status = 7
-                            self.ambassador_cards = list(user.playing_cards)
-                            self.ambassador_cards.append(game.deck.draw())
-                            self.ambassador_cards.append(game.deck.draw())
-                            print(f'Drawing ambassador_cards: {self.ambassador_cards}')
-                        elif action_word == 'assassinate':
-                            self.status = 6
-                        else:
-                            print(f'action_word={action_word}')
-                    """
                 else:
                     # if there is a target, they remains alive
                     self.status = 4
@@ -377,8 +358,10 @@ class Action:
             game.save()
             return True
         else:
-            if by not in self.challenge_action[1]:
+            # not challenge
+            if by not in self.challenge_action[1] and by in game.get_alive_players():
                 self.challenge_action[1].append(by)
+
             if len(self.challenge_action[1]) == len(game.get_alive_players()):
                 self.challenge_action[0] = -1
                 self.message += f'Action is NOT challenged.\n'
@@ -418,10 +401,10 @@ class Action:
             game.save()
 
         elif self.action_to_word[self.action[0]] == 'foreign aid':
-            if by_user not in self.block[1]:
+            if by_user not in self.block[1] and by_user in game.get_alive_players():
                 self.block[1].append(by_user)
 
-            if len(self.block[1]) == len(game.get_alive_players()):
+            if len(self.block[1]) >= len(game.get_alive_players()):
                 self.message += f'''Action is not blocked.\n'''
         else:
             action_word = self.action_to_word[self.action[0]]
