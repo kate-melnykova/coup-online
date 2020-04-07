@@ -97,12 +97,19 @@ def play_coup():
             # player loses life
             player = game.get_user(game.action.lose_life[0])
             if not player.playing_cards:
-                print('Killing a player with no influence')
-                raise
+                flash('Killing a player with no influence')
             elif len(player.playing_cards) == 1:
                 player.lose_life(player.playing_cards[0])
                 game.action.message += f'{player.name} has no influence now.\n'
                 game.action.status = game.action.lose_life[2]
+                for user_ in game.all_users:
+                    events[f'{game_id}:{user_.name}'] = {
+                        'type': 'reload',
+                        'data': {
+                            'url': url_for('play_coup'),
+                            }
+                    }
+                game.save()
         if game.action.status == 5:
             game.action.do_perform_action(game)
 
