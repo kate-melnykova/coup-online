@@ -17,7 +17,7 @@ def no_special_symbols(form, field):
 
 
 class CreateOrJoinGameForm(Form):
-    name = StringField('Enter your name*:', [validators.DataRequired,
+    name = StringField('Enter your name*:', [validators.DataRequired(),
                                 validators.Length(min=1, max=15),
                                 no_special_symbols,
                                 ])

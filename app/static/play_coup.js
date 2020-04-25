@@ -6,14 +6,28 @@ window.reload = function(data){
     window.location.href = data.url;
 }
 
+function loadState() {
+    window.setTimeout(function(){
+        $.ajax({
+            url: '/long_polling',
+            method: 'GET',
+            dataType: 'json',
+            success: function(event){
+                window[event.type](event.data);
+                loadState();
+            }
+        });
+    }, 2000);
+}
+
 function verifyAmbassador(){
 {
-    var n_cards = document.getElementsById("n_cards");
+    var n_cards = $("#n_cards");
     if (n_cards == null){
         console.log('Not ambassador');
         return 0
     } else {
-        var checkboxes = document.getElementsByName("selected_cards");
+        var checkboxes = $("[name=selected_cards]");
         var numberOfCheckedItems = 0;
         for(var i = 0; i < checkboxes.length; i++)
         {
@@ -29,18 +43,4 @@ function verifyAmbassador(){
     return 1
 }
 };
-
-function loadState() {
-    window.setTimeout(function(){
-        $.ajax({
-            url: '/long_polling',
-            method: 'GET',
-            dataType: 'json',
-            success: function(event){
-                window[event.type](event.data);
-                loadState();
-            }
-        });
-    }, 2000);
-}
 
